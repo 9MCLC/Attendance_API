@@ -205,11 +205,11 @@ def RegisterUser():
         }
     '''
     statusCode = 200
-    record = json.loads(request.data)
+    body = json.loads(request.data)
 
-    englishName = record.get("englishName")
-    chineseName = record.get("chineseName")
-    birthDate = record.get("birthDate")
+    englishName = body.get("englishName")
+    chineseName = body.get("chineseName")
+    birthDate = body.get("birthDate")
     UserID = str(uuid.uuid4())
     if englishName and chineseName and birthDate:
 
@@ -218,7 +218,7 @@ def RegisterUser():
         mydb.commit()
         returnMsg = {"statusCode":statusCode, "isSuccess":True, "UUID":UserID}
 
-        logging.basicConfig(filename=f'C:/Users/yewho/OneDrive/Desktop/Church Projects/Attendance System/Log/{datetime.now().strftime("%m-%d-%Y")}.log', filemode='w', format='%(asctime)s - %(levelname)s - %(message)s')
+        logging.basicConfig(filename=f'.\\Logs\\API-{datetime.now().strftime("%m-%d-%Y")}.log', filemode='w', format='%(asctime)s - %(levelname)s - %(message)s')
         logging.info(f'{englishName} is now registered to the System')
     
     else:
@@ -255,12 +255,12 @@ def markAttendance():
         }
     '''
     statusCode = 200
-    record = json.loads(request.data)
+    body = json.loads(request.data)
 
-    User_UUID = record.get("UUID")
-    engName = record.get("englishName")
-    chiName = record.get("chineseName")
-    dob = record.get("birthDate")
+    User_UUID = body.get("UUID")
+    engName = body.get("englishName")
+    chiName = body.get("chineseName")
+    dob = body.get("birthDate")
     
     if User_UUID and engName and chiName and dob:
         cursor = mydb.cursor()
@@ -332,9 +332,9 @@ def unmarkAttendance():
         }
     '''
     statusCode = 200
-    record = json.loads(request.data)
+    body = json.loads(request.data)
 
-    User_UUID = record.get("UUID")
+    User_UUID = body.get("UUID")
     if User_UUID:
         cursor = mydb.cursor()
         cursor.execute(f"DELETE FROM attendance where UUID = '{User_UUID}' and DateOfAttendance = CURRENT_DATE(); ")
