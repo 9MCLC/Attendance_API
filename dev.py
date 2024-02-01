@@ -11,7 +11,7 @@ mydb = mysql.connector.connect(
   host="localhost",
   user="root",
   password="031201",
-  database ="9mclc",
+  database ="9mclc-dev",
   port=3306
 )
 
@@ -48,7 +48,7 @@ def showAllUser():
     statusCode = 200
 
     cursor = mydb.cursor()
-    cursor.execute('SELECT * FROM userinfo')
+    cursor.execute('SELECT * FROM userinfo order by EnglishName')
     result = queryResultToList(cursor)
     returnMsg = {"statusCode":statusCode, "response": result}
 
@@ -270,7 +270,7 @@ def markAttendance():
     else:
         statusCode = 401
         returnMsg = {"statusCode":statusCode, "isSuccess":False, 'Message': "Unauthorized"}
-    return jsonify(returnMsg)
+    return jsonify(returnMsg), statusCode
 
 @app.route('/showAllAttendance', methods = ['GET'])
 def showAllAttendance():
@@ -308,7 +308,7 @@ def showAllAttendance():
     result = queryResultToList(cursor)
 
     returnMsg = {"statusCode":statusCode, "isSuccess":True, 'result': result}
-    return jsonify(returnMsg)
+    return jsonify(returnMsg), statusCode
 
 @app.route('/unmarkAttendance', methods = ['DELETE'])
 def unmarkAttendance():
@@ -344,7 +344,43 @@ def unmarkAttendance():
         statusCode = 401
         returnMsg = {"statusCode":statusCode, "isSuccess":False, "message": "Unauthorized"}
 
-    return jsonify(returnMsg)
+    return jsonify(returnMsg), statusCode
+
+@app.route('/removeUser', methods = ['DELETE'])
+def removeUser():
+    '''
+    Remove an attendance for the current date
+
+    Body:
+        - UUID
+    
+    Example Execute:
+        - http://192.168.0.118:5000/removeUser
+        Body:
+        {
+            "UUID":"e8581a7b-9b77-48fa-abab-3c1bd1a55395"
+        }
+
+    Example Return:
+        {
+            "isSuccess": True,
+            "statusCode": 200
+        }
+    '''
+    statusCode = 200
+    body = json.loads(request.data)
+
+    User_UUID = body.get("UUID")
+    if User_UUID:
+        cursor = mydb.cursor()
+        cursor.execute(f"DELETE FROM userinfo where UUID = '{User_UUID}'")
+        mydb.commit()
+        returnMsg = {"statusCode":statusCode, "isSuccess":True}
+    else:
+        statusCode = 401
+        returnMsg = {"statusCode":statusCode, "isSuccess":False, "message": "Unauthorized"}
+
+    return jsonify(returnMsg), statusCode
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=5001)
