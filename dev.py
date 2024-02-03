@@ -89,7 +89,7 @@ def addUser():
     body:
         {
             "Name": "Yew Hong Yin",
-            "BirthDate": "2003-12-01",
+            "birthDate": "2003-12-01",
             "phoneNumber": "011-10869155"
         }
 
@@ -116,14 +116,14 @@ def addUser():
         cursor.execute(query, (uuid_value, name, dob, phNo))
         if cursor.rowcount == 1:
             mydb.commit()
-            statusCode == 200
+            statusCode = 200
             returnMsg = {"statusCode": statusCode, "UUID": uuid_value}
         else:
             mydb.rollback()
-            statusCode == 422
+            statusCode = 422
             returnMsg = {"statusCode": statusCode, "message": "Error occured, please check the input format or contact admin."}
     else:
-        statusCode == 401
+        statusCode = 401
         returnMsg = {"statusCode": statusCode, "message": "Unauthorized, please input all values"}
 
     return jsonify(returnMsg), statusCode
@@ -139,7 +139,7 @@ def removeUser():
     * Will return UUID as response
     
     Example Execute:
-        - http://192.168.0.119:5001/addUser
+        - http://192.168.0.119:5001/removeUser
 
     body:
         {
@@ -155,7 +155,7 @@ def removeUser():
     statusCode = 200
     args = json.loads(request.data)
 
-    uuid_value = args.get("UUID", None)
+    uuid_value = args.get("UUID")
 
     cursor = mydb.cursor()
 
@@ -164,17 +164,17 @@ def removeUser():
 
     if uuid_value:
     # Execute the query with parameters
-        cursor.execute(query, (uuid_value))
+        cursor.execute(query, ([uuid_value]))
         if cursor.rowcount == 1:
             mydb.commit()
-            statusCode == 200
-            returnMsg = {"statusCode": statusCode, "response": uuid_value}
+            statusCode = 200
+            returnMsg = {"statusCode": statusCode, "Status": "Success"}
         else:
             mydb.rollback()
-            statusCode == 404
+            statusCode = 404
             returnMsg = {"statusCode": statusCode, "message": "uuid is not a valid user"}
     else:
-        statusCode == 401
+        statusCode = 401
         returnMsg = {"statusCode": statusCode, "message": "Unauthorized, check for all input value"}
 
     return jsonify(returnMsg), statusCode
@@ -211,7 +211,7 @@ def showAttendance():
 
     uuid_value = args.get("UUID", None)
     name = args.get("Name", None)
-    ToA = args.get("ToA", None)
+    ToA = args.get("ToA", datetime.now())
 
     cursor = mydb.cursor()
 
@@ -243,7 +243,7 @@ def addAttendance():
     body:
         {
             "Name": "Yew Hong Yin",
-            "UUID": "e8581a7b-9b77-48fa-abab-3c1bd1a55395",
+            "UUID": "844574bc-7694-4835-8b00-f52f6a839c83",
             "ToA": "2003-12-01"
         }
 
@@ -269,14 +269,14 @@ def addAttendance():
         cursor.execute(query, (uuid_value, name, ToA))
         if cursor.rowcount == 1:
             mydb.commit()
-            statusCode == 200
+            statusCode = 200
             returnMsg = {"statusCode": statusCode, "status": "Success"}
         else:
             mydb.rollback()
-            statusCode == 422
+            statusCode = 422
             returnMsg = {"statusCode": statusCode, "message": "Error occured, please check the input format or contact admin."}
     else:
-        statusCode == 401
+        statusCode = 401
         returnMsg = {"statusCode": statusCode, "message": "Unauthorized, please input all values"}
 
     return jsonify(returnMsg), statusCode
@@ -310,26 +310,26 @@ def removeAttendance():
     args = json.loads(request.data)
 
     uuid_value = args.get("UUID", None)
-    ToA = args.get("ToA", datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+    ToA = args.get("ToA", datetime.now().date())
 
     cursor = mydb.cursor()
 
     # Use placeholders in the SQL query and pass values as parameters
-    query = ('DELETE FROM userinfo WHERE UUID = %s AND TimeOfAttendance = %s')
+    query = ('DELETE FROM attendance WHERE UUID = %s AND TimeOfAttendance < %s')
 
     if uuid_value:
     # Execute the query with parameters
         cursor.execute(query, (uuid_value, ToA))
         if cursor.rowcount == 1:
             mydb.commit()
-            statusCode == 200
+            statusCode = 200
             returnMsg = {"statusCode": statusCode, "status": "Success"}
         else:
             mydb.rollback()
-            statusCode == 404
+            statusCode = 404
             returnMsg = {"statusCode": statusCode, "message": "uuid is not a valid user"}
     else:
-        statusCode == 401
+        statusCode = 401
         returnMsg = {"statusCode": statusCode, "message": "Unauthorized, check for all input value"}
 
     return jsonify(returnMsg), statusCode
