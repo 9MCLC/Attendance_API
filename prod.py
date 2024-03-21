@@ -21,364 +21,355 @@ def queryResultToList(cursor):
 
     return result
 
-@app.route('/showUser', methods = ['GET'])
-def showAllUser():
+@app.route('/getUser', methods = ['GET'])
+def showUser():
     '''
-    Get all registered user
+    Get Users
 
     Params:
-        - There is no parameters accepted in this endpoint
+        - UUID
+        - name
+        - phoneNumber
+    * These Params are optional, if not given, all users will be returned
     
     Example Execute:
-        - http://192.168.0.118:5000/showUser
+        - http://192.168.0.119:5001/getUser?UUID=e8581a7b-9b77-48fa-abab-3c1bd1a55395
 
     Example Return:
         {
-            "response": [
+            "users": [
                 {
-                    "BirthDate": "Sat, 16 Dec 2023 00:00:00 GMT",
-                    "ChineseName": "康",
-                    "EnglishName": "Bernard Lim",
-                    "UUID": "e8581a7b-9b77-48fa-abab-3c1bd1a55395"
+                    "Name": "Bernard Lim",
+                    "UUID": "e8581a7b-9b77-48fa-abab-3c1bd1a55395",
+                    "PhoneNumber": "011-10869155"
                 }
             ],
+            "rowCount": 1,
             "statusCode": 200
         }
     '''
     statusCode = 200
+    args = request.args
+
+    uuid_value = args.get("UUID", None)
+    name = args.get("name", None)
+    phNo = args.get("phoneNumber", None)
 
     cursor = mydb.cursor()
-    cursor.execute('SELECT * FROM userinfo order by EnglishName')
+
+    # Use placeholders in the SQL query and pass values as parameters
+    query = ('SELECT * FROM userinfo WHERE (%s IS NULL OR UUID = %s) AND (%s IS NULL OR Name = %s) AND (%s IS NULL OR PhoneNumber = %s)')
+
+    # Execute the query with parameters
+    cursor.execute(query, (uuid_value, uuid_value, name, name, phNo, phNo))
+
     result = queryResultToList(cursor)
-    returnMsg = {"statusCode":statusCode, "response": result}
+    returnMsg = {"statusCode": statusCode, "users": result, "rowCount": len(result)}
 
     return jsonify(returnMsg), statusCode
 
-@app.route('/validateRegistration', methods =['GET'])
-def ValidateRegistration():
+@app.route('/addUser', methods = ['POST'])
+def addUser():
     '''
-    Checks if input user is new user by details
+    Add New Users
 
     Params:
-        - englishName
-        - chineseName
-        - birthDate
+        - name
+        - phoneNumber
+    * These Params are required, if not given, will return error 401
+    * Will return UUID as response
     
     Example Execute:
-        - http://192.168.0.118:5000/validateRegistration?englishName=Bernard Lim&chineseName=康&birthDate=2023-12-16
+        - http://192.168.0.119:5001/addUser
 
-    Example Return:
+    body:
         {
-            "isExist": True/False,
-            "statusCode": 200
+            "name": "Yew Hong Yin",
+            "phoneNumber": "011-10869155"
         }
-    '''
-    statusCode = 200
-    args = request.args
-
-    engName = args.get("englishName")
-    chiName = args.get("chineseName")
-    dob = args.get("birthDate")
-    if engName and chiName and dob:
-        cursor = mydb.cursor()
-
-        cursor.execute(f"SELECT * FROM userinfo where EnglishName = '{engName}' and ChineseName = '{chiName}' and BirthDate = '{dob}'; ")
-        result = queryResultToList(cursor)
-        if result:
-            returnMsg = {"statusCode":statusCode, "isExist":True}
-        else:
-            returnMsg = {"statusCode":statusCode, "isExist":False}
-    else:
-        statusCode = 401
-        returnMsg = {"statusCode": statusCode, 'isExist': 'Error', 'message': 'Unauthorized'}
-
-    return jsonify(returnMsg), statusCode
-
-@app.route('/validateUser', methods =['GET'])
-def ValidateUser():
-    '''
-    Checks if input user is new user by UUID
-
-    Params:
-        - UUID
-    
-    Example Execute:
-        - http://192.168.0.118:5000/validateUser?UUID=e8581a7b-9b77-48fa-abab-3c1bd1a55395
 
     Example Return:
         {
-            "isExist": True/False,
-            "result": [
-                {
-                    "BirthDate": "Sat, 16 Dec 2023 00:00:00 GMT",
-                    "ChineseName": "康",
-                    "EnglishName": "Bernard Lim",
-                    "UUID": "e8581a7b-9b77-48fa-abab-3c1bd1a55395"
-                }
-            ]
-            "statusCode": 200
-        }
-    '''
-    statusCode = 200
-    args = request.args
-
-    User_UUID = args.get("UUID")
-    if User_UUID:
-        cursor = mydb.cursor()
-
-        cursor.execute(f"SELECT * FROM userinfo where UUID = '{User_UUID}'; ")
-        result = queryResultToList(cursor)
-        if result:
-            returnMsg = {"statusCode":statusCode, "isExist":True, "result":result}
-        else:
-            returnMsg = {"statusCode":statusCode, "isExist":False}
-    else:
-        statusCode = 401
-        returnMsg = {"statusCode": statusCode, "isExist": "Error", "message": "Unauthorized"}
-
-    return jsonify(returnMsg), statusCode
-
-@app.route('/validateAttendance', methods =['GET'])
-def validateAttendance():
-    '''
-    Checks if input user is already marked attendance
-
-    Params:
-        - UUID
-    
-    Example Execute:
-        - http://192.168.0.118:5000/validateAttendance?UUID=e8581a7b-9b77-48fa-abab-3c1bd1a55395
-
-    Example Return:
-        {
-            "isExist": True/False,
-            "statusCode": 200
-        }
-    '''
-    statusCode = 200
-    args = request.args
-
-    User_UUID = args.get("UUID")
-    Date = datetime.now().strftime("%Y-%m-%d")
-
-    if User_UUID:
-        cursor = mydb.cursor()
-
-        cursor.execute(f"SELECT * FROM attendance where UUID = '{User_UUID}' and DateofAttendance = '{Date}'; ")
-
-        result = queryResultToList(cursor)
-        if result:
-            returnMsg = {"statusCode":statusCode, "isExist":True, "result": result}
-        else:
-            returnMsg = {"statusCode":statusCode, "isExist":False}
-    else:
-        statusCode = 401
-        returnMsg = {"statusCode": statusCode, "isExist": "Error", "message": "Unauthorized"}
-
-    return jsonify(returnMsg), statusCode
-
-@app.route('/register', methods = ['POST'])
-def RegisterUser():
-    '''
-    Registers a new user to the system
-
-    Body:
-        - englishName
-        - chineseName
-        - birthDate
-    
-    Example Execute:
-        - http://192.168.0.118:5000/register
-    
-        Body:
-            {
-                "englishName": "Bernard Lim",
-                "chineseName": "康",
-                "birthDate": "2003-12-01"
-            }
-
-    Example Return:
-        {
-            "status": 'Success',
             "UUID": "e8581a7b-9b77-48fa-abab-3c1bd1a55395",
             "statusCode": 200
         }
     '''
     statusCode = 200
-    body = json.loads(request.data)
+    args = json.loads(request.data)
 
-    englishName = body.get("englishName")
-    chineseName = body.get("chineseName")
-    birthDate = body.get("birthDate")
-    UserID = str(uuid.uuid4())
-    if englishName and chineseName and birthDate:
-
-        cursor = mydb.cursor()
-        cursor.execute(f"INSERT INTO userinfo (UUID, EnglishName, ChineseName, BirthDate) VALUES ('{UserID}', '{englishName}', '{chineseName}', '{birthDate}');")
-        mydb.commit()
-        returnMsg = {"statusCode":statusCode, "isSuccess":True, "UUID":UserID}
-
-        logging.basicConfig(filename=f'.\\Logs\\API-{datetime.now().strftime("%m-%d-%Y")}.log', filemode='w', format='%(asctime)s - %(levelname)s - %(message)s')
-        logging.info(f'{englishName} is now registered to the System')
-    
-    else:
-        statusCode = 401
-        returnMsg = {"statusCode":statusCode, "isSuccess":False, "message":'Unauthorized'}
-    return jsonify(returnMsg), statusCode
-
-@app.route('/attendance', methods = ['POST'])
-def markAttendance():
-    '''
-    Registers the attendance to the system
-
-    Body:
-        - UUID
-        - englishName
-        - chineseName
-        - birthDate
-    
-    Example Execute:
-        - http://192.168.0.118:5000/attendance
-    
-        Body:
-            {
-                "UUID": "e8581a7b-9b77-48fa-abab-3c1bd1a55395"
-                "englishName": "Bernard Lim",
-                "chineseName": "康",
-                "birthDate": "2003-12-01"
-            }
-
-    Example Return:
-        {
-            "isSuccess": True,
-            "statusCode": 200
-        }
-    '''
-    statusCode = 200
-    body = json.loads(request.data)
-
-    User_UUID = body.get("UUID")
-    engName = body.get("englishName")
-    chiName = body.get("chineseName")
-    dob = body.get("birthDate")
-    
-    if User_UUID and engName and chiName and dob:
-        cursor = mydb.cursor()
-        cursor.execute(f"INSERT INTO attendance (UUID, EnglishName, ChineseName, BirthDate, DateOfAttendance, TimeOfAttendance) VALUES ('{User_UUID}', '{engName}', '{chiName}', '{dob}', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);")
-        mydb.commit()
-        returnMsg = {"statusCode":statusCode, "isSuccess":True}
-    else:
-        statusCode = 401
-        returnMsg = {"statusCode":statusCode, "isSuccess":False, 'Message': "Unauthorized"}
-    return jsonify(returnMsg), statusCode
-
-@app.route('/showAllAttendance', methods = ['GET'])
-def showAllAttendance():
-    '''
-    show all attendance for the current date
-
-    Params:
-        - There is no parameters accepted in this endpoint
-    
-    Example Execute:
-        - http://192.168.0.118:5000/showAllAttendance
-
-    Example Return:
-        {
-            "isSuccess": True,
-            "result":[
-                {
-                    "BirthDate": "Fri, 01 Dec 2023 00:00:00 GMT",
-                    "ChineseName": "康",
-                    "DateOfAttendance": "Mon, 18 Dec 2023 00:00:00 GMT",
-                    "EnglishName": "Bernard Lim",
-                    "TimeOfAttendance": "Mon, 18 Dec 2023 08:33:05 GMT",
-                    "UUID": "e8581a7b-9b77-48fa-abab-3c1bd1a55395"
-                }
-            ],
-            "statusCode": 200
-        }
-    '''
-    statusCode = 200
-
-    DateOfAttendance = datetime.now().strftime("%Y-%m-%d")
+    name = args.get("name", None)
+    phNo = args.get("phoneNumber", None)
+    uuid_value = str(uuid.uuid4())
 
     cursor = mydb.cursor()
-    cursor.execute(f"SELECT * FROM attendance where DateOfAttendance = '{DateOfAttendance}'; ")
-    result = queryResultToList(cursor)
+    # Use placeholders in the SQL query and pass values as parameters
+    query = ('INSERT INTO userinfo (UUID, Name, PhoneNumber) VALUES (%s, %s, %s)')
 
-    returnMsg = {"statusCode":statusCode, "isSuccess":True, 'result': result}
-    return jsonify(returnMsg), statusCode
-
-@app.route('/unmarkAttendance', methods = ['DELETE'])
-def unmarkAttendance():
-    '''
-    Remove an attendance for the current date
-
-    Body:
-        - UUID
-    
-    Example Execute:
-        - http://192.168.0.118:5000/unmarkattendance
-        Body:
-        {
-            "UUID":"e8581a7b-9b77-48fa-abab-3c1bd1a55395"
-        }
-
-    Example Return:
-        {
-            "isSuccess": True,
-            "statusCode": 200
-        }
-    '''
-    statusCode = 200
-    body = json.loads(request.data)
-
-    User_UUID = body.get("UUID")
-    if User_UUID:
-        cursor = mydb.cursor()
-        cursor.execute(f"DELETE FROM attendance where UUID = '{User_UUID}' and DateOfAttendance = CURRENT_DATE(); ")
-        mydb.commit()
-        returnMsg = {"statusCode":statusCode, "isSuccess":True}
+    # Execute the query with parameters
+    if all([name, uuid_value, phNo]):
+        cursor.execute(query, (uuid_value, name, phNo))
+        if cursor.rowcount == 1:
+            mydb.commit()
+            statusCode = 200
+            returnMsg = {"statusCode": statusCode, "UUID": uuid_value}
+        else:
+            mydb.rollback()
+            statusCode = 422
+            returnMsg = {"statusCode": statusCode, "message": "Error occured, please check the input format or contact admin."}
     else:
         statusCode = 401
-        returnMsg = {"statusCode":statusCode, "isSuccess":False, "message": "Unauthorized"}
+        returnMsg = {"statusCode": statusCode, "message": "Unauthorized, please input all values"}
 
     return jsonify(returnMsg), statusCode
 
 @app.route('/removeUser', methods = ['DELETE'])
 def removeUser():
     '''
-    Remove an attendance for the current date
+    Remove Existing Users
 
-    Body:
+    Params:
         - UUID
+    * These Params are required, if not given, will return error 401
+    * Will return UUID as response
     
     Example Execute:
-        - http://192.168.0.118:5000/removeUser
-        Body:
+        - http://192.168.0.119:5001/removeUser
+
+    body:
         {
-            "UUID":"e8581a7b-9b77-48fa-abab-3c1bd1a55395"
+            "UUID": "e8581a7b-9b77-48fa-abab-3c1bd1a55395"
         }
 
     Example Return:
         {
-            "isSuccess": True,
+            "status": "Success",
             "statusCode": 200
         }
     '''
     statusCode = 200
-    body = json.loads(request.data)
+    args = json.loads(request.data)
 
-    User_UUID = body.get("UUID")
-    if User_UUID:
-        cursor = mydb.cursor()
-        cursor.execute(f"DELETE FROM userinfo where UUID = '{User_UUID}'")
-        mydb.commit()
-        returnMsg = {"statusCode":statusCode, "isSuccess":True}
+    uuid_value = args.get("UUID")
+
+    cursor = mydb.cursor()
+
+    # Use placeholders in the SQL query and pass values as parameters
+    query = ('DELETE FROM userinfo WHERE UUID = %s')
+
+    if uuid_value:
+    # Execute the query with parameters
+        cursor.execute(query, ([uuid_value]))
+        if cursor.rowcount == 1:
+            mydb.commit()
+            statusCode = 200
+            returnMsg = {"statusCode": statusCode, "Status": "Success"}
+        else:
+            mydb.rollback()
+            statusCode = 404
+            returnMsg = {"statusCode": statusCode, "message": "uuid is not a valid user"}
     else:
         statusCode = 401
-        returnMsg = {"statusCode":statusCode, "isSuccess":False, "message": "Unauthorized"}
+        returnMsg = {"statusCode": statusCode, "message": "Unauthorized, check for all input value"}
+
+    return jsonify(returnMsg), statusCode
+
+@app.route('/getAttendance', methods = ['GET'])
+def showAttendance():
+    '''
+    Get Attendance
+
+    Params:
+        - UUID
+        - name
+        - toa
+    * These Params are optional, if not given, all attendance will be returned
+    
+    Example Execute:
+        - http://192.168.0.119:5001/getUser?UUID=e8581a7b-9b77-48fa-abab-3c1bd1a55395&ToA=2023-02-01
+
+    Example Return:
+        {
+            "result": [
+                {
+                    "Name": "Yew Hong Yin",
+                    "UUID": "e8581a7b-9b77-48fa-abab-3c1bd1a55395",
+                    "ToA": "2022-03-01 Time"
+                }
+            ],
+            "rowCount": 1,
+            "statusCode": 200
+        }
+    '''
+    statusCode = 200
+    args = request.args
+
+    uuid_value = args.get("UUID", None)
+    name = args.get("name", None)
+    ToA = args.get("toa", datetime.now().date())
+
+    cursor = mydb.cursor()
+
+    # Use placeholders in the SQL query and pass values as parameters
+    query = ('SELECT * FROM attendance WHERE (%s IS NULL OR UUID = %s) AND (%s IS NULL OR Name = %s) AND (%s IS NULL OR TimeOfAttendance > %s)')
+
+    # Execute the query with parameters
+    cursor.execute(query, (uuid_value, uuid_value, name, name, ToA, ToA))
+
+    result = queryResultToList(cursor)
+    returnMsg = {"statusCode": statusCode, "result": result, "rowCount": len(result)}
+
+    return jsonify(returnMsg), statusCode
+
+@app.route('/addAttendance', methods = ['POST'])
+def addAttendance():
+    '''
+    Add New Attendance
+
+    Params:
+        - UUID
+        - name
+        - toa *Optional
+    * Other Params are required, if not given, will return error 401
+    
+    Example Execute:
+        - http://192.168.0.119:5001/addAttendance
+
+    body:
+        {
+            "name": "Yew Hong Yin",
+            "UUID": "844574bc-7694-4835-8b00-f52f6a839c83",
+            "toa": "2003-12-01"
+        }
+
+    Example Return:
+        {
+            "status": "Success",
+            "statusCode": 200
+        }
+    '''
+    statusCode = 200
+    args = json.loads(request.data)
+
+    name = args.get("name", None)
+    ToA = args.get("toa", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+    uuid_value = args.get("UUID", None)
+
+    cursor = mydb.cursor()
+    # Use placeholders in the SQL query and pass values as parameters
+    query = ('INSERT INTO attendance (UUID, Name, TimeOfAttendance) VALUES (%s, %s, %s)')
+
+    # Execute the query with parameters
+    if all([name, ToA, uuid_value]):
+        cursor.execute(query, (uuid_value, name, ToA))
+        if cursor.rowcount == 1:
+            mydb.commit()
+            statusCode = 200
+            returnMsg = {"statusCode": statusCode, "status": "Success"}
+        else:
+            mydb.rollback()
+            statusCode = 422
+            returnMsg = {"statusCode": statusCode, "message": "Error occured, please check the input format or contact admin."}
+    else:
+        statusCode = 401
+        returnMsg = {"statusCode": statusCode, "message": "Unauthorized, please input all values"}
+
+    return jsonify(returnMsg), statusCode
+
+@app.route('/removeAttendance', methods = ['DELETE'])
+def removeAttendance():
+    '''
+    Remove Existing Attendance
+
+    Params:
+        - UUID
+        - ToA *Optional
+    * These Params are required, if not given, will return error 401
+    
+    Example Execute:
+        - http://192.168.0.119:5001/removeAttendance
+
+    body:
+        {
+            "UUID": "e8581a7b-9b77-48fa-abab-3c1bd1a55395",
+            "ToA": "2023-12-01 Time"
+        }
+
+    Example Return:
+        {
+            "status": "Success",
+            "statusCode": 200
+        }
+    '''
+    statusCode = 200
+    args = json.loads(request.data)
+
+    uuid_value = args.get("UUID", None)
+    ToA = args.get("toa", datetime.now().strftime("%Y-%m-%d 00:00:00"))
+
+    cursor = mydb.cursor()
+
+    # Use placeholders in the SQL query and pass values as parameters
+    query = ('DELETE FROM attendance WHERE UUID = %s AND TimeOfAttendance > %s')
+
+    if uuid_value:
+    # Execute the query with parameters
+        cursor.execute(query, (uuid_value, ToA))
+        if cursor.rowcount == 1:
+            mydb.commit()
+            statusCode = 200
+            returnMsg = {"statusCode": statusCode, "status": "Success"}
+        else:
+            mydb.rollback()
+            statusCode = 404
+            returnMsg = {"statusCode": statusCode, "message": "uuid is not a valid user"}
+    else:
+        statusCode = 401
+        returnMsg = {"statusCode": statusCode, "message": "Unauthorized, check for all input value"}
+
+    return jsonify(returnMsg), statusCode
+
+@app.route('/getTableData', methods = ['GET'])
+def getTableData():
+    '''
+    Get Table Data
+
+    Params:
+        - name
+    * These Params are optional, if not given, all attendance will be returned
+    
+    Example Execute:
+        - http://192.168.0.119:5001/getTableData
+
+    Example Return:
+        {
+            "result": [
+                {
+                    "Name": "Yew Hong Yin",
+                    "UUID": "e8581a7b-9b77-48fa-abab-3c1bd1a55395",
+                    "ToA": "2022-03-01 Time"
+                }
+            ],
+            "rowCount": 1,
+            "statusCode": 200
+        }
+    '''
+    statusCode = 200
+    args = request.args
+    name = args.get("name", None)
+    likeName = None
+    if name:
+        likeName = name+'%'
+
+    cursor = mydb.cursor()
+
+    # Use placeholders in the SQL query and pass values as parameters
+    query = ('SELECT * FROM user_attendance_view WHERE (%s IS NULL OR Name LIKE %s)')
+
+    # Execute the query with parameters
+    cursor.execute(query, (name, likeName))
+
+    result = queryResultToList(cursor)
+    returnMsg = {"statusCode": statusCode, "users": result, "rowCount": len(result)}
 
     return jsonify(returnMsg), statusCode
 
